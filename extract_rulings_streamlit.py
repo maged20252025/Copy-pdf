@@ -1,21 +1,23 @@
-
 import streamlit as st
 import zipfile
 import io
 
-st.set_page_config(page_title="📁 البحث عن ملفات طعن", layout="centered")
-st.title("📦 البحث وتنزيل ملفات الطعون دفعة واحدة")
+st.set_page_config(page_title="📁 ملفات الطعون دفعة واحدة", layout="centered")
+st.title("📦 استخراج ملفات الطعون بناءً على ملف أرقام")
 
-# رفع الملفات
+# رفع ملفات PDF
 uploaded_files = st.file_uploader("📤 ارفع مجموعة من ملفات PDF", type="pdf", accept_multiple_files=True)
 
-# إدخال أرقام الطعون
-search_input = st.text_input("🔎 أدخل أرقام الطعون (افصل بينها بفاصلة)", placeholder="مثال: 30492, 30501, 30777")
+# رفع ملف يحتوي على أرقام الطعون (واحد في كل سطر أو مفصولة بفاصلة)
+uploaded_ids_file = st.file_uploader("📄 ارفع ملف TXT يحتوي على أرقام الطعون", type=["txt"])
 
-if uploaded_files and search_input:
-    search_numbers = [num.strip() for num in search_input.split(",") if num.strip().isdigit()]
+if uploaded_files and uploaded_ids_file:
+    content = uploaded_ids_file.read().decode("utf-8")
+    # دعم الفصل بفواصل أو أسطر
+    raw_numbers = content.replace(",", "\n").splitlines()
+    search_numbers = [num.strip() for num in raw_numbers if num.strip().isdigit()]
+
     matched_files = []
-
     for file in uploaded_files:
         for num in search_numbers:
             if num in file.name:
@@ -23,7 +25,7 @@ if uploaded_files and search_input:
                 break
 
     if matched_files:
-        st.success(f"✅ تم العثور على {len(matched_files)} ملف يطابق الأرقام المدخلة.")
+        st.success(f"✅ تم العثور على {len(matched_files)} ملف يطابق الأرقام في الملف.")
 
         # تجهيز ملف zip في الذاكرة
         zip_buffer = io.BytesIO()
@@ -35,10 +37,10 @@ if uploaded_files and search_input:
 
         # زر تنزيل الكل
         st.download_button(
-            label="📥 تنزيل كل الملفات دفعة واحدة (ZIP)",
+            label="📥 تنزيل كل الملفات المطابقة كملف ZIP",
             data=zip_buffer,
             file_name="الطعون_المختارة.zip",
             mime="application/zip"
         )
     else:
-        st.warning("❌ لم يتم العثور على أي ملف يطابق الأرقام المدخلة.")
+        st.warning("❌ لم يتم العثور على ملفات مطابقة.")
